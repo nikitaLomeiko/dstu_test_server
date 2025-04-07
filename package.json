@@ -1,0 +1,10 @@
+{
+    "name": "dstu_test_server",
+    "version": "1.0.0",
+    "scripts": {
+      "start": "json-server --watch db.json --port 5000"
+    },
+    "dependencies": {
+      "json-server": "^0.17.0"
+    }
+  }
