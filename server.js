@@ -2,11 +2,12 @@ const express = require("express");
 const jsonServer = require("json-server");
 const path = require('path');
 
+const dbPath = process.env.IS_SERVERLESS 
+  ? path.join('/tmp', 'db.json') 
+  : path.join(__dirname, 'db.json');
 
-const db = path.join(__dirname, "db.json");
-const router = jsonServer.router(db);
+const router = jsonServer.router(dbPath);
 const middlewares = jsonServer.defaults();
-
 
 const app = express();
 
