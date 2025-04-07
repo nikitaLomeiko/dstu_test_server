@@ -4,9 +4,6 @@ const path = require("path");
 
 const dbPath = process.env.IS_SERVERLESS ? path.join("/tmp", "db.json") : path.join(__dirname, "db.json");
 
-if (!fs.existsSync(dbPath)) {
-  fs.writeFileSync(dbPath, JSON.stringify({ posts: [], users: [] }), "utf-8");
-}
 const router = jsonServer.router(dbPath);
 const middlewares = jsonServer.defaults();
 
