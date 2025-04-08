@@ -1,32 +1,69 @@
-const express = require("express");
-const jsonServer = require("json-server");
-const path = require("path");
-const fs = require("fs");
+const express = require('express');
+const jsonServer = require('json-server');
+const fs = require('fs');
+const path = require('path');
 
-// В Vercel используем только /tmp (не __dirname!)
-const dbPath = "/tmp/db.json"; // Жёстко прописываем путь
+// 1. Инициализация DB
+const dbPath = '/tmp/db.json'; // Только так для Vercel!
 
-console.log("Используемый путь к DB:", dbPath);
+// Создаем или копируем базу данных
+const initDB = () => {
+  try {
+    // Если файл уже существует - проверяем его
+    if (fs.existsSync(dbPath)) {
+      const content = fs.readFileSync(dbPath, 'utf-8');
+      JSON.parse(content); // Проверяем валидность JSON
+      console.log('DB существует и валидна');
+      return;
+    }
 
-// Гарантируем, что файл существует
-if (!fs.existsSync(dbPath)) {
-  fs.writeFileSync(dbPath, JSON.stringify({ posts: [] }));
-  console.log("Создан новый файл DB");
-}
+    // Пытаемся скопировать из проекта (если есть)
+    const projectDbPath = path.join(__dirname, 'db.json');
+    if (fs.existsSync(projectDbPath)) {
+      fs.copyFileSync(projectDbPath, dbPath);
+      console.log('DB скопирована из проекта');
+      return;
+    }
 
+    // Создаем новую DB
+    const defaultData = {
+      reviews: [ // Пример данных
+        { id: 1, text: "Отличный товар", rating: 5 },
+        { id: 2, text: "Не понравилось", rating: 2 }
+      ]
+    };
+    fs.writeFileSync(dbPath, JSON.stringify(defaultData));
+    console.log('Создана новая DB с тестовыми данными');
+  } catch (err) {
+    console.error('Ошибка инициализации DB:', err);
+    process.exit(1); // Завершаем процесс при критической ошибке
+  }
+};
+
+// 2. Инициализируем DB перед запуском сервера
+initDB();
+
+// 3. Настройка сервера
+const app = express();
 const router = jsonServer.router(dbPath);
 const middlewares = jsonServer.defaults();
 
-const app = express();
 app.use(middlewares);
-app.use("/api", router);
+app.use('/api', router);
 
-app.get("/", (req, res) => {
-  res.json({ 
-    message: "Сервер работает!",
-    dbLocation: dbPath,
-    filesInTmp: fs.readdirSync("/tmp") // Для отладки
-  });
+// 4. Эндпоинт для отладки
+app.get('/debug', (req, res) => {
+  try {
+    const dbContent = fs.readFileSync(dbPath, 'utf-8');
+    res.json({
+      status: 'OK',
+      dbPath,
+      dbExists: fs.existsSync(dbPath),
+      dbContent: JSON.parse(dbContent)
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = app;
